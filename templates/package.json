@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "start:debug": "nest start --debug 0.0.0.0:9229 --watch",
+    "prebuild:prod": "rimraf dist",
+    "build:prod": "nest build --path ./tsconfig.build-prod.json"
+  }
+}

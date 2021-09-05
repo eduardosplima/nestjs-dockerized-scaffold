@@ -16,9 +16,15 @@ jobs:
   executor:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v2.4.0
+      - name: Checkout
+        uses: actions/checkout@v2.3.4
+      - run: npm i @nestjs/cli
+      
+      # - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      # - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      # - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
       #- name: Check out repository code
       #  uses: actions/checkout@v2
       #- run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
@@ -26,7 +32,7 @@ jobs:
       #- name: List files in the repository
       #  run: |
           # ls ${{ github.workspace }}
-      - run: |
-          echo "Hello ${{ github.event.inputs.name }}!"
-          echo "- in ${{ github.event.inputs.home }}!"
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+      # - run: |
+      #     echo "Hello ${{ github.event.inputs.name }}!"
+      #     echo "- in ${{ github.event.inputs.home }}!"
+      # - run: echo "🍏 This job's status is ${{ job.status }}."

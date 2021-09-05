@@ -1,0 +1,43 @@
+FROM node:slim AS node-oracle
+
+ARG ORACLE_INSTALL=/opt/oracle
+
+WORKDIR ${ORACLE_INSTALL}
+RUN apt-get update
+RUN apt-get install -y libaio1 procps unzip wget
+RUN wget -q https://download.oracle.com/otn_software/linux/instantclient/instantclient-basic-linuxx64.zip
+RUN unzip -q instantclient-basic-linuxx64.zip
+RUN rm -rf instantclient-basic-linuxx64.zip
+RUN sh -c "echo $(pwd)/$(ls) > /etc/ld.so.conf.d/oracle-instantclient.conf"
+RUN ldconfig
+RUN apt-get autoremove -y --purge
+RUN apt-get autoclean
+##################################################
+FROM node-oracle AS build
+
+ARG buildcmd="npm run build:prod"
+
+WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN ${buildcmd}
+##################################################
+FROM node-oracle AS package
+
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
+ARG HEAP_SIZE=384
+ENV HEAP_SIZE=${HEAP_SIZE}
+
+WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm ci --only=prod
+RUN npm cache clean --force
+COPY --from=build /usr/src/app/dist ./dist
+
+EXPOSE 3000
+
+USER node
+CMD node --max-old-space-size=${HEAP_SIZE} dist/main
