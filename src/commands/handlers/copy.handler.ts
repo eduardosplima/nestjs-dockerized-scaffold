@@ -10,13 +10,13 @@ import { CopyCommand } from '../impl/copy.command';
 @CommandHandler(CopyCommand)
 export class CopyHandler implements ICommandHandler<CopyCommand, void> {
   async execute(command: CopyCommand): Promise<void> {
-    const { src, dst } = command;
+    const { src, dst, filter } = command;
 
     const spin = createSpinner();
     spin.start(`Copying ${basename(src)}`);
 
     try {
-      await copy(src, dst);
+      await copy(src, dst, { filter });
     } catch (err) {
       spin.fail();
       throw err;

@@ -1,16 +1,18 @@
 import { Command, Console } from 'nestjs-console';
-import { join } from 'path';
+import { basename, join } from 'path';
 
 import { Inject } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { CommandBus } from '@nestjs/cqrs';
 
+import { BuildEnvCommand } from './commands/impl/build-env.command';
 import { CopyCommand } from './commands/impl/copy.command';
 import { CreateNestAppCommand } from './commands/impl/create-nest-app.command';
 import { CreateTmpDirCommand } from './commands/impl/create-tmp-dir.command';
-import { DumpEnvCommand } from './commands/impl/dump-env.command';
 import { ExecNpmCliCommand } from './commands/impl/exec-npm-cli.command';
 import { MergeJsonsCommand } from './commands/impl/merge-jsons.command';
+import { RemoveCommand } from './commands/impl/remove.command';
+import { SrcUncommentCommand } from './commands/impl/src-uncomment.command';
 import { WriteCommand } from './commands/impl/write.command';
 import appConfig from './config/app.config';
 import { DatabaseTypeEnum } from './enums/database-type.enum';
@@ -71,7 +73,7 @@ export class AppService {
         required: false,
       },
       {
-        flags: '--setup-database <mongodb|mssql|oracle|other|postgres>',
+        flags: '--setup-database <mongodb|mssql|oracle|postgres>',
         description:
           'Indicative to use core module template to connect in desired database',
         required: false,
@@ -156,6 +158,8 @@ export class AppService {
 
     await this.customizeEslintConfig(projectDir, templatesDir);
 
+    await this.customizePrettierrc(projectDir, templatesDir);
+
     await this.customizeTsConfig(projectDir, templatesDir);
 
     await this.createVscodeWorkspace(
@@ -189,8 +193,21 @@ export class AppService {
       options.skipPrometheusContainer,
     );
 
-    // src
+    await this.assembleSrc(
+      projectDir,
+      templatesDir,
+      options.setupJwt,
+      options.setupDatabase,
+      options.setupRedis,
+      options.setupEmail,
+      options.setupPrometheus,
+    );
+
+    await this.assembleTest(projectDir, templatesDir);
+
     // Prometheus + Grafana
+
+    await this.lintProject(projectDir);
   }
 
   private async updateNpmPackages(
@@ -247,30 +264,36 @@ export class AppService {
       }
     }
 
-    await this.commandBus.execute(
-      new ExecNpmCliCommand(
-        projectDir,
-        NpmCliCmdEnum.UNINSTALL,
-        uninstallPackages,
-        'Uninstalling unnecessary packages',
-      ),
-    );
-    await this.commandBus.execute(
-      new ExecNpmCliCommand(
-        projectDir,
-        NpmCliCmdEnum.INSTALL,
-        installPackages,
-        'Installing new packages',
-      ),
-    );
-    await this.commandBus.execute(
-      new ExecNpmCliCommand(
-        projectDir,
-        NpmCliCmdEnum.INSTALL_DEV,
-        installDevPackages,
-        'Installing new dev packages',
-      ),
-    );
+    if (uninstallPackages.length > 0) {
+      await this.commandBus.execute(
+        new ExecNpmCliCommand(
+          projectDir,
+          NpmCliCmdEnum.UNINSTALL,
+          'Uninstalling unnecessary packages',
+          uninstallPackages,
+        ),
+      );
+    }
+    if (installPackages.length > 0) {
+      await this.commandBus.execute(
+        new ExecNpmCliCommand(
+          projectDir,
+          NpmCliCmdEnum.INSTALL,
+          'Installing new packages',
+          installPackages,
+        ),
+      );
+    }
+    if (installDevPackages.length > 0) {
+      await this.commandBus.execute(
+        new ExecNpmCliCommand(
+          projectDir,
+          NpmCliCmdEnum.INSTALL_DEV,
+          'Installing new dev packages',
+          installDevPackages,
+        ),
+      );
+    }
   }
 
   private async customizePackageJson(
@@ -319,6 +342,16 @@ export class AppService {
 
     src = join(templatesDir, '.eslintignore');
     dst = join(projectDir, '.eslintignore');
+    return this.commandBus.execute(new CopyCommand(src, dst));
+  }
+
+  private async customizePrettierrc(
+    projectDir: string,
+    templatesDir: string,
+  ): Promise<void> {
+    const src = join(templatesDir, '.prettierrc');
+    const dst = join(projectDir, '.prettierrc');
+
     return this.commandBus.execute(new CopyCommand(src, dst));
   }
 
@@ -488,11 +521,103 @@ export class AppService {
     envFragments.get('APP_PORT_DEBUG').value = debugPort;
 
     const data = await this.commandBus.execute(
-      new DumpEnvCommand(envFragments, 'Building .env'),
+      new BuildEnvCommand(envFragments),
     );
 
     return this.commandBus.execute(
-      new WriteCommand(data.join('\n'), join(projectDir, '.env')),
+      new WriteCommand(data, join(projectDir, '.env')),
+    );
+  }
+
+  private async assembleSrc(
+    projectDir: string,
+    templatesDir: string,
+    setupJwt: boolean,
+    setupDatabase: DatabaseTypeEnum,
+    setupRedis: boolean,
+    setupEmail: boolean,
+    setupPrometheus: boolean,
+  ): Promise<void> {
+    const srcTemplatesDir = join(templatesDir, 'src');
+    const srcProjectDir = join(projectDir, 'src');
+
+    await this.commandBus.execute(new RemoveCommand(srcProjectDir));
+
+    let setupTypeOrm = false;
+    let setupMongoose = false;
+    if (setupDatabase) {
+      setupTypeOrm = setupDatabase !== DatabaseTypeEnum.MONGODB;
+      setupMongoose = !setupTypeOrm;
+    }
+
+    const filter: ConstructorParameters<typeof CopyCommand>['2'] = (
+      src,
+      dest,
+    ) => {
+      if (!setupJwt && basename(dest) === 'auth') return false;
+      if (!setupTypeOrm && basename(dest) === 'db') return false;
+      if (!setupMongoose && basename(dest) === 'mongodb') return false;
+      if (!setupRedis && basename(dest) === 'redis') return false;
+      if (!setupEmail && basename(dest) === 'email') return false;
+      if (!setupPrometheus && basename(dest) === 'metrics') return false;
+      return true;
+    };
+
+    await this.commandBus.execute(
+      new CopyCommand(srcTemplatesDir, srcProjectDir, filter),
+    );
+
+    const dbConfig = this.config.database[setupDatabase];
+    const srcUncommentConfigList: Array<Record<string, unknown>> = [];
+    if (setupJwt) {
+      srcUncommentConfigList.push(this.config.jwt.src_uncomment);
+    }
+    if (dbConfig) {
+      srcUncommentConfigList.push(dbConfig.src_uncomment);
+    }
+    if (setupRedis) {
+      srcUncommentConfigList.push(this.config.redis.src_uncomment);
+    }
+    if (setupEmail) {
+      srcUncommentConfigList.push(this.config.email.src_uncomment);
+    }
+    if (setupPrometheus) {
+      srcUncommentConfigList.push(this.config.prometheus.src_uncomment);
+    }
+
+    if (srcUncommentConfigList.length > 0) {
+      const srcUncommentConfig = await this.commandBus.execute(
+        new MergeJsonsCommand(
+          srcUncommentConfigList,
+          {},
+          'Processing customizations in src folder',
+        ),
+      );
+      await this.commandBus.execute(
+        new SrcUncommentCommand(srcProjectDir, srcUncommentConfig),
+      );
+    }
+  }
+
+  private async assembleTest(
+    projectDir: string,
+    templatesDir: string,
+  ): Promise<void> {
+    const testTemplatesDir = join(templatesDir, 'test');
+    const testProjectDir = join(projectDir, 'test');
+
+    await this.commandBus.execute(new RemoveCommand(testProjectDir));
+
+    return this.commandBus.execute(
+      new CopyCommand(testTemplatesDir, testProjectDir),
+    );
+  }
+
+  async lintProject(projectDir: string): Promise<void> {
+    return this.commandBus.execute(
+      new ExecNpmCliCommand(projectDir, NpmCliCmdEnum.RUN, 'Lint project', [
+        'lint',
+      ]),
     );
   }
 }

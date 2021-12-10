@@ -1,5 +1,5 @@
 import { readJson } from 'fs-extra';
-import { merge } from 'lodash';
+import { isArray, mergeWith, union } from 'lodash';
 import { createSpinner } from 'nestjs-console';
 
 import { CommandHandler } from '@nestjs/cqrs';
@@ -35,7 +35,19 @@ export class MergeJsonsHandler
         }
       }, Promise.resolve());
 
-      jsonResult = merge({}, ...jsons);
+      jsonResult = mergeWith(
+        {},
+        ...jsons,
+        (
+          objValue: unknown,
+          srcValue: Array<unknown>,
+        ): Array<unknown> | undefined => {
+          if (isArray(objValue)) {
+            return union(objValue, srcValue);
+          }
+          return undefined;
+        },
+      );
     } catch (err) {
       spin.fail();
       throw err;

@@ -3,15 +3,17 @@ import { createSpinner } from 'nestjs-console';
 import { CommandHandler } from '@nestjs/cqrs';
 import type { ICommandHandler } from '@nestjs/cqrs';
 
-import { DumpEnvCommand } from '../impl/dump-env.command';
+import { BuildEnvCommand } from '../impl/build-env.command';
 
-@CommandHandler(DumpEnvCommand)
-export class DumpEnvHandler implements ICommandHandler<DumpEnvCommand, string> {
-  async execute(command: DumpEnvCommand): Promise<string> {
-    const { envConfigMap, spinText } = command;
+@CommandHandler(BuildEnvCommand)
+export class BuildEnvHandler
+  implements ICommandHandler<BuildEnvCommand, string>
+{
+  async execute(command: BuildEnvCommand): Promise<string> {
+    const { envConfigMap } = command;
 
     const spin = createSpinner();
-    spin.start(spinText);
+    spin.start('Building .env');
 
     let result: string;
     try {

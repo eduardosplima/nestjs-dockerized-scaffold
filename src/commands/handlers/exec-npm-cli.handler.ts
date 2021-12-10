@@ -11,23 +11,21 @@ export class ExecNpmCliHandler
   implements ICommandHandler<ExecNpmCliCommand, void>
 {
   async execute(command: ExecNpmCliCommand): Promise<void> {
-    const { cmd, directory, packages, spinText } = command;
+    const { cmd, directory, parameters, spinText } = command;
 
-    if (packages && packages.length > 0) {
-      const spin = createSpinner();
-      const cwd = process.cwd();
-      process.chdir(directory);
+    const spin = createSpinner();
+    const cwd = process.cwd();
+    process.chdir(directory);
 
-      spin.start(spinText);
-      try {
-        await execAsync(`npm ${cmd} ${packages.join(' ')}`);
-      } catch (err) {
-        spin.fail();
-        throw err;
-      }
-      spin.succeed();
-
-      process.chdir(cwd);
+    spin.start(spinText);
+    try {
+      await execAsync(`npm ${cmd} ${parameters?.join(' ')}`);
+    } catch (err) {
+      spin.fail();
+      throw err;
     }
+    spin.succeed();
+
+    process.chdir(cwd);
   }
 }

@@ -14,7 +14,7 @@ module.exports = {
     project: 'tsconfig.json',
     sourceType: 'module',
   },
-  plugins: ['@typescript-eslint/eslint-plugin', 'unused-imports'],
+  plugins: ['@typescript-eslint/eslint-plugin', 'import', 'unused-imports'],
   root: true,
   rules: {
     '@typescript-eslint/interface-name-prefix': 'off',

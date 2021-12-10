@@ -41,6 +41,8 @@ commom:
       value: null
     SWAGGER_PATH:
       value: swagger
+    HTTP_LOGGER_DEV:
+      value: true
     LOGGER_DIRNAME:
       comment: LOGGER
       lineCommented: true
@@ -72,10 +74,10 @@ commom:
       - 'pino'
       - 'request-ip'
     install_dev:
-      - '@trivago/prettier-plugin-sort-imports'
+      - '@trivago/prettier-plugin-sort-imports@^2.0.0'
       - '@types/fast-redact'
       - '@types/pino'
-      - 'eslint-config-airbnb-typescript@^12.0.0'
+      - 'eslint-config-airbnb-typescript'
       - 'eslint-plugin-import'
       - 'eslint-plugin-unused-imports'
       - 'pino-pretty'
@@ -103,6 +105,18 @@ jwt:
       value: secret
     JWT_EXPIRES_IN:
       value: 86400
+  src_uncomment:
+    main:
+      lines:
+        - 'addBearerAuth'
+      path:
+        - 'main.ts'
+    app_module:
+      lines:
+        - 'AuthModule'
+      path:
+        - 'app.module.ts'
+
 redis:
   docker_compose:
     services:
@@ -122,6 +136,14 @@ redis:
       lineSeparator: true
       value: ''
       valueIfContainer: '{"host":"${APP_NAME}-redis"}'
+  src_uncomment:
+    core_module:
+      lines:
+        - 'RedisModule'
+      path:
+        - 'core'
+        - 'core.module.ts'
+
 email:
   docker_compose:
     services:
@@ -147,6 +169,14 @@ email:
       hideIfNull: true
       value: null
       valueIfContainer: 5000
+  src_uncomment:
+    core_module:
+      lines:
+        - 'EmailModule'
+      path:
+        - 'core'
+        - 'core.module.ts'
+
 prometheus:
   docker_compose:
     services:
@@ -211,6 +241,13 @@ prometheus:
       hideIfNull: true
       value: null
       valueIfContainer: 3000
+  src_uncomment:
+    core_module:
+      lines:
+        - 'MetricsModule'
+      path:
+        - 'core'
+        - 'core.module.ts'
 
 database:
   mongodb:
@@ -268,6 +305,13 @@ database:
         hideIfNull: true
         value: null
         valueIfContainer: 27017
+    src_uncomment:
+      core_module:
+        lines:
+          - 'MongodbModule'
+        path:
+          - 'core'
+          - 'core.module.ts'
   mssql:
     docker:
       dockerfile: 'Dockerfile'
@@ -330,6 +374,13 @@ database:
         hideIfNull: true
         value: null
         valueIfContainer: 1433
+    src_uncomment:
+      core_module:
+        lines:
+          - 'DbModule'
+        path:
+          - 'core'
+          - 'core.module.ts'
   oracle:
     docker:
       dockerfile: 'Dockerfile.oracle'
@@ -363,38 +414,13 @@ database:
         value: 'null'
       DB_CONFIGURATION:
         value: '{"type":"${DB_TYPE}","host":"${DB_HOST}","port":${DB_PORT},"database":"${DB_NAME}","schema":"${DB_SCHEMA}","username":"${DB_USER}","password":"${DB_PSWD}","synchronize":${DB_SYNCHRONIZE},"maxQueryExecutionTime":${DB_MAX_QUERY_EXECUTION_TIME},"extra":${DB_EXTRA}}'
-  other:
-    docker:
-      dockerfile: 'Dockerfile'
-    npm:
-      install:
-        - '@nestjs/typeorm'
-        - 'typeorm'
-    env_file:
-      DB_TYPE:
-        comment: DATABASE
-        lineSeparator: true
-        value: ''
-      DB_HOST:
-        value: ''
-      DB_PORT:
-        value: ''
-      DB_NAME:
-        value: ''
-      DB_USER:
-        value: ''
-      DB_PSWD:
-        value: ''
-      DB_SCHEMA:
-        value: ''
-      DB_SYNCHRONIZE:
-        value: false
-      DB_MAX_QUERY_EXECUTION_TIME:
-        value: 3000
-      DB_EXTRA:
-        value: 'null'
-      DB_CONFIGURATION:
-        value: '{"type":"${DB_TYPE}","host":"${DB_HOST}","port":${DB_PORT},"database":"${DB_NAME}","schema":"${DB_SCHEMA}","username":"${DB_USER}","password":"${DB_PSWD}","synchronize":${DB_SYNCHRONIZE},"maxQueryExecutionTime":${DB_MAX_QUERY_EXECUTION_TIME},"extra":${DB_EXTRA}}'
+    src_uncomment:
+      core_module:
+        lines:
+          - 'DbModule'
+        path:
+          - 'core'
+          - 'core.module.ts'
   postgres:
     docker:
       dockerfile: 'Dockerfile'
@@ -456,5 +482,12 @@ database:
         hideIfNull: true
         value: null
         valueIfContainer: 5432
-    
+    src_uncomment:
+      core_module:
+        lines:
+          - 'DbModule'
+        path:
+          - 'core'
+          - 'core.module.ts'
+
 tmpdir_prefix: 'pncc' # Easter Egg ^_^

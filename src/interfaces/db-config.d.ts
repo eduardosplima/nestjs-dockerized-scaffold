@@ -1,4 +1,5 @@
 import type { EnvConfig } from './env-config';
+import type { SrcUncommentConfig } from './src-uncomment-config';
 
 export interface DbConfig {
   docker: {
@@ -13,5 +14,9 @@ export interface DbConfig {
 
   env_file: {
     [K in string]: EnvConfig;
+  };
+
+  src_uncomment: {
+    [K in string]: SrcUncommentConfig;
   };
 }
