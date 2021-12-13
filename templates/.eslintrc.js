@@ -31,5 +31,13 @@ module.exports = {
     'no-underscore-dangle': 'off',
     'prettier/prettier': ['error'],
     'unused-imports/no-unused-imports-ts': 'error'
-  }
+  },
+  overrides: [
+    {
+      files: ['*.entity.ts'],
+      rules: {
+        'import/no-cycle': 'off'
+      }
+    }
+  ]
 };

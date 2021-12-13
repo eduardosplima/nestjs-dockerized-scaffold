@@ -10,7 +10,7 @@ import { CopyCommand } from './commands/impl/copy.command';
 import { CreateNestAppCommand } from './commands/impl/create-nest-app.command';
 import { CreateTmpDirCommand } from './commands/impl/create-tmp-dir.command';
 import { ExecNpmCliCommand } from './commands/impl/exec-npm-cli.command';
-import { MergeJsonsCommand } from './commands/impl/merge-jsons.command';
+import { MergeObjectsCommand } from './commands/impl/merge-objects.command';
 import { RemoveCommand } from './commands/impl/remove.command';
 import { SrcUncommentCommand } from './commands/impl/src-uncomment.command';
 import { WriteCommand } from './commands/impl/write.command';
@@ -131,6 +131,13 @@ export class AppService {
     ],
   })
   async newProject(appName: string, options: NewProjectOptions): Promise<void> {
+    if (!appName.match(/^[a-z\d-]+$/))
+      throw new Error(
+        'API name must be only lowercase letters, numbers and/or dash',
+      );
+    if (appName.match(/^[\d_-].*$/))
+      throw new Error('API name must be started by a letter');
+
     const tmpDir: string = await this.commandBus.execute(
       new CreateTmpDirCommand(this.config.tmpdir_prefix),
     );
@@ -205,7 +212,10 @@ export class AppService {
 
     await this.assembleTest(projectDir, templatesDir);
 
-    // Prometheus + Grafana
+    if (options.setupPrometheus) {
+      await this.assembleGrafana(projectDir, templatesDir, appName);
+      await this.assemblePrometheus(projectDir, templatesDir, appName);
+    }
 
     await this.lintProject(projectDir);
   }
@@ -305,7 +315,7 @@ export class AppService {
     const dst = join(projectDir, 'package.json');
 
     const data: Record<string, unknown> = await this.commandBus.execute(
-      new MergeJsonsCommand(
+      new MergeObjectsCommand(
         [src, { description: description || '' }],
         dst,
         'Customizing package.json',
@@ -323,7 +333,7 @@ export class AppService {
     const dst = join(projectDir, 'nest-cli.json');
 
     const data: Record<string, unknown> = await this.commandBus.execute(
-      new MergeJsonsCommand([src], dst, 'Customizing nest-cli.json'),
+      new MergeObjectsCommand([src], dst, 'Customizing nest-cli.json'),
     );
 
     return this.commandBus.execute(new WriteCommand(data, dst));
@@ -387,7 +397,7 @@ export class AppService {
 
     const file = join(dst, 'launch.json');
     const data: Record<string, unknown> = await this.commandBus.execute(
-      new MergeJsonsCommand(
+      new MergeObjectsCommand(
         [
           {
             configurations: [{ port: debugPort }],
@@ -452,7 +462,7 @@ export class AppService {
     }
 
     const data = await this.commandBus.execute(
-      new MergeJsonsCommand(
+      new MergeObjectsCommand(
         composeFragments,
         this.config.commom.docker_compose,
         'Building docker-compose.yml',
@@ -510,7 +520,7 @@ export class AppService {
     }
     if (setupPrometheus) {
       populateEnvFragments(
-        this.config.email.env_file,
+        this.config.prometheus.env_file,
         !skipPrometheusContainer,
       );
     }
@@ -587,7 +597,7 @@ export class AppService {
 
     if (srcUncommentConfigList.length > 0) {
       const srcUncommentConfig = await this.commandBus.execute(
-        new MergeJsonsCommand(
+        new MergeObjectsCommand(
           srcUncommentConfigList,
           {},
           'Processing customizations in src folder',
@@ -610,6 +620,103 @@ export class AppService {
 
     return this.commandBus.execute(
       new CopyCommand(testTemplatesDir, testProjectDir),
+    );
+  }
+
+  private async assembleGrafana(
+    projectDir: string,
+    templatesDir: string,
+    appName: string,
+  ): Promise<void> {
+    const grafanaTemplatesDir = join(templatesDir, 'grafana');
+    const grafanaProjectDir = join(projectDir, 'grafana');
+
+    await this.commandBus.execute(
+      new CopyCommand(grafanaTemplatesDir, grafanaProjectDir),
+    );
+
+    const appDashboardFile = join(
+      grafanaProjectDir,
+      'dashboards',
+      'application_dashboard.json',
+    );
+    const appDashboardData = await this.commandBus.execute(
+      new MergeObjectsCommand(
+        [{ title: appName }],
+        appDashboardFile,
+        'Building dashboards/application_dashboard.json',
+        false,
+      ),
+    );
+    await this.commandBus.execute(
+      new WriteCommand(appDashboardData, appDashboardFile),
+    );
+
+    const datasourcesFile = join(
+      grafanaProjectDir,
+      'provisioning',
+      'datasources',
+      'all.yml',
+    );
+    const datasourcesData = await this.commandBus.execute(
+      new MergeObjectsCommand(
+        [
+          {
+            datasources: [
+              {
+                name: 'Prometheus',
+                type: 'prometheus',
+                access: 'proxy',
+                url: `http://${appName}-prometheus:9090`,
+                basicAuth: false,
+                isDefault: true,
+                editable: true,
+              },
+            ],
+          },
+        ],
+        datasourcesFile,
+        'Building provisioning/dashboards/all.yml',
+        false,
+      ),
+    );
+    return this.commandBus.execute(
+      new WriteCommand(datasourcesData, datasourcesFile),
+    );
+  }
+
+  private async assemblePrometheus(
+    projectDir: string,
+    templatesDir: string,
+    appName: string,
+  ): Promise<void> {
+    const prometheusTemplatesDir = join(templatesDir, 'prometheus');
+    const prometheusProjectDir = join(projectDir, 'prometheus');
+
+    await this.commandBus.execute(
+      new CopyCommand(prometheusTemplatesDir, prometheusProjectDir),
+    );
+
+    const prometheusFile = join(prometheusProjectDir, 'prometheus.yml');
+    const prometheusData = await this.commandBus.execute(
+      new MergeObjectsCommand(
+        [
+          {
+            scrape_configs: [
+              {
+                job_name: appName,
+                static_configs: [{ targets: [`${appName}:3000`] }],
+              },
+            ],
+          },
+        ],
+        prometheusFile,
+        'Building prometheus.yml',
+        false,
+      ),
+    );
+    return this.commandBus.execute(
+      new WriteCommand(prometheusData, prometheusFile),
     );
   }
 

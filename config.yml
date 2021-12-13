@@ -76,7 +76,6 @@ commom:
     install_dev:
       - '@trivago/prettier-plugin-sort-imports@^2.0.0'
       - '@types/fast-redact'
-      - '@types/pino'
       - 'eslint-config-airbnb-typescript'
       - 'eslint-plugin-import'
       - 'eslint-plugin-unused-imports'
@@ -217,7 +216,7 @@ prometheus:
       value: true
     METRICS_DEFAULT_CONFIG:
       value: 'null'
-    METRICS_value:
+    METRICS_DEFAULT:
       value: '{"enabled":${METRICS_DEFAULT_ENABLED},"config":${METRICS_DEFAULT_CONFIG}}'
     METRICS_HEAP_SIZE_LIMIT_ENABLED:
       comment: file://./src/core/metrics/interfaces/heap-size-limit-metrics-options.d.ts

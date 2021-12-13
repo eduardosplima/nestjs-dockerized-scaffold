@@ -1,4 +1,4 @@
-FROM node:alpine AS build
+FROM node:16-alpine AS build
 
 ARG buildcmd="npm run build:prod"
 
@@ -8,7 +8,7 @@ RUN npm install
 COPY . .
 RUN ${buildcmd}
 ##################################################
-FROM node:alpine AS package
+FROM node:16-alpine AS package
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}

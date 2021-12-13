@@ -1,4 +1,4 @@
-FROM node:slim AS node-oracle
+FROM node:16-slim AS node-oracle
 
 ARG ORACLE_INSTALL=/opt/oracle
 
