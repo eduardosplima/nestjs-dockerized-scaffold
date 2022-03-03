@@ -11,6 +11,8 @@ export interface NewProjectOptions {
 
   setupDatabase?: DatabaseTypeEnum;
 
+  setupLdap: boolean;
+
   setupRedis: boolean;
 
   setupEmail: boolean;
@@ -18,6 +20,8 @@ export interface NewProjectOptions {
   setupPrometheus: boolean;
 
   skipDatabaseContainer: boolean;
+
+  skipLdapContainer: boolean;
 
   skipRedisContainer: boolean;
 

@@ -8,7 +8,7 @@ export class CnpjValidatorUtil {
 
   private static verifierDigit(digits: string): number {
     let index = 2;
-    const reverse: Array<number> = digits.split('').reduce((buffer, number) => {
+    const reverse: number[] = digits.split('').reduce((buffer, number) => {
       return [Number.parseInt(number, 10)].concat(buffer);
     }, []);
 
@@ -27,7 +27,7 @@ export class CnpjValidatorUtil {
 
     const stripped = number.replace(/[^\d]/g, '');
 
-    const blacklist: Array<string> = [
+    const blacklist: string[] = [
       '00000000000000',
       '11111111111111',
       '22222222222222',

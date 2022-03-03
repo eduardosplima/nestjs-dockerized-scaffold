@@ -8,8 +8,8 @@ export interface DbConfig {
   };
 
   npm: {
-    install: Array<string>;
-    install_dev: Array<string>;
+    install: string[];
+    install_dev: string[];
   };
 
   env_file: {

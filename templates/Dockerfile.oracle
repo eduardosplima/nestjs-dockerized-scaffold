@@ -2,16 +2,16 @@ FROM node:16-slim AS node-oracle
 
 ARG ORACLE_INSTALL=/opt/oracle
 
+ENV GIT_SSL_NO_VERIFY=true
+
 WORKDIR ${ORACLE_INSTALL}
 RUN apt-get update
-RUN apt-get install -y libaio1 procps unzip wget
+RUN apt-get install -y git libaio1 procps unzip wget
 RUN wget -q https://download.oracle.com/otn_software/linux/instantclient/instantclient-basic-linuxx64.zip
 RUN unzip -q instantclient-basic-linuxx64.zip
 RUN rm -rf instantclient-basic-linuxx64.zip
 RUN sh -c "echo $(pwd)/$(ls) > /etc/ld.so.conf.d/oracle-instantclient.conf"
 RUN ldconfig
-RUN apt-get autoremove -y --purge
-RUN apt-get autoclean
 ##################################################
 FROM node-oracle AS build
 
@@ -38,6 +38,10 @@ RUN npm cache clean --force
 COPY --from=build /usr/src/app/dist ./dist
 
 EXPOSE 3000
+
+RUN apt-get remove -y git unzip wget
+RUN apt-get autoremove -y --purge
+RUN apt-get autoclean
 
 USER node
 CMD node --max-old-space-size=${HEAP_SIZE} dist/main

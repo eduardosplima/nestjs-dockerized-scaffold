@@ -37,10 +37,12 @@ commom:
     APP_PORT:
       value: null
     APP_PORT_DEBUG:
-      comment: Must be equal to debug port configured in ".vscode/launch.json"
       value: null
     SWAGGER_PATH:
       value: swagger
+    SWAGGER_SERVER:
+      lineCommented: true
+      value: '/'
     HTTP_LOGGER_DEV:
       value: true
     LOGGER_DIRNAME:
@@ -54,8 +56,6 @@ commom:
     LOGGER_LEVEL:
       value: debug
     LOGGER_PRETTY_PRINT:
-      value: true
-    LOGGER_REQUESTS:
       value: true
   npm:
     install:
@@ -76,6 +76,7 @@ commom:
     install_dev:
       - '@trivago/prettier-plugin-sort-imports@^2.0.0'
       - '@types/fast-redact'
+      - 'eslint-config-airbnb-base'
       - 'eslint-config-airbnb-typescript'
       - 'eslint-plugin-import'
       - 'eslint-plugin-unused-imports'
@@ -116,6 +117,45 @@ jwt:
       path:
         - 'app.module.ts'
 
+ldap:
+  docker_compose:
+    services:
+      ldap:
+        container_name: ${APP_NAME}-ldap
+        image: bitnami/openldap:latest
+        environment:
+          - LDAP_USERS=user01,user02
+          - LDAP_PASSWORDS=bitnami1,bitnami2
+        networks:
+          - dockernet
+  npm:
+    install:
+      - 'ldapjs'
+    install_dev:
+      - '@types/ldapjs'
+  env_file:
+    LDAP_APP_USER:
+      comment: LDAP
+      lineSeparator: true
+      value: ''
+      valueIfContainer: "'cn=admin,dc=example,dc=org'"
+    LDAP_APP_PSWD:
+      value: ''
+      valueIfContainer: 'adminpassword'
+    LDAP_OPTIONS:
+      value: ''
+      valueIfContainer: '{ "url":["ldap://${APP_NAME}-ldap:1389"] }'
+    LDAP_USERS_BASE:
+      value: ''
+      valueIfContainer: "'dc=example,dc=org'"
+  src_uncomment:
+    core_module:
+      lines:
+        - 'LdapModule'
+      path:
+        - 'core'
+        - 'core.module.ts'
+
 redis:
   docker_compose:
     services:
@@ -134,7 +174,7 @@ redis:
       comment: REDIS
       lineSeparator: true
       value: ''
-      valueIfContainer: '{"host":"${APP_NAME}-redis"}'
+      valueIfContainer: '{ "host":"${APP_NAME}-redis" }'
   src_uncomment:
     core_module:
       lines:
@@ -163,7 +203,7 @@ email:
       comment: EMAIL
       lineSeparator: true
       value: ''
-      valueIfContainer: '{"host":"${APP_NAME}-smtp4dev","port":25}'
+      valueIfContainer: '{ "host":"${APP_NAME}-smtp4dev", "port":25 }'
     SMTP4DEV_WEB_INTERFACE_PORT:
       hideIfNull: true
       value: null
@@ -217,21 +257,21 @@ prometheus:
     METRICS_DEFAULT_CONFIG:
       value: 'null'
     METRICS_DEFAULT:
-      value: '{"enabled":${METRICS_DEFAULT_ENABLED},"config":${METRICS_DEFAULT_CONFIG}}'
+      value: '{ "enabled":${METRICS_DEFAULT_ENABLED}, "config":${METRICS_DEFAULT_CONFIG} }'
     METRICS_HEAP_SIZE_LIMIT_ENABLED:
       comment: file://./src/core/metrics/interfaces/heap-size-limit-metrics-options.d.ts
       value: true
     METRICS_HEAP_SIZE_LIMIT_OPTIONS:
       value: 'null'
     METRICS_HEAP_SIZE_LIMIT:
-      value: '{"enabled":${METRICS_HEAP_SIZE_LIMIT_ENABLED},"options":${METRICS_HEAP_SIZE_LIMIT_OPTIONS}}'
+      value: '{ "enabled":${METRICS_HEAP_SIZE_LIMIT_ENABLED}, "options":${METRICS_HEAP_SIZE_LIMIT_OPTIONS} }'
     METRICS_HTTP_ENABLED:
       comment: file://./src/core/metrics/interfaces/http-metrics-options.interface.d.ts
       value: true
     METRICS_HTTP_OPTIONS:
-      value: '{"ignorePaths":["/${SWAGGER_PATH}","/${METRICS_PATH}"]}'
+      value: '{ "ignorePaths":["/${SWAGGER_PATH}","/${METRICS_PATH}"] }'
     METRICS_HTTP:
-      value: '{"enabled":${METRICS_HTTP_ENABLED},"options":${METRICS_HTTP_OPTIONS}}'
+      value: '{ "enabled":${METRICS_HTTP_ENABLED}, "options":${METRICS_HTTP_OPTIONS} }'
     PROMETHEUS_WEB_INTERFACE_PORT:
       hideIfNull: true
       value: null
@@ -299,7 +339,7 @@ database:
       DB_URI:
         value: ${DB_SCHEME}://${DB_USER}:${DB_PSWD}@${DB_HOST}:${DB_PORT}/${DB_NAME}${DB_OPTIONS}
       DB_CONFIGURATION:
-        value: '{"uri":"${DB_URI}"}'
+        value: '{ "uri":"${DB_URI}" }'
       DB_CLIENT_PORT:
         hideIfNull: true
         value: null
@@ -366,9 +406,9 @@ database:
         value: 'null'
       DB_OPTIONS:
         value: 'null'
-        valueIfContainer: '{"trustServerCertificate":true}'
+        valueIfContainer: '{ "trustServerCertificate":true }'
       DB_CONFIGURATION:
-        value: '{"type":"${DB_TYPE}","host":"${DB_HOST}","port":${DB_PORT},"database":"${DB_NAME}","schema":"${DB_SCHEMA}","username":"${DB_USER}","password":"${DB_PSWD}","synchronize":${DB_SYNCHRONIZE},"maxQueryExecutionTime":${DB_MAX_QUERY_EXECUTION_TIME},"extra":${DB_EXTRA},"options":${DB_OPTIONS}}'
+        value: '{ "type":"${DB_TYPE}", "host":"${DB_HOST}", "port":${DB_PORT}, "database":"${DB_NAME}", "schema":"${DB_SCHEMA}", "username":"${DB_USER}", "password":"${DB_PSWD}", "synchronize":${DB_SYNCHRONIZE}, "maxQueryExecutionTime":${DB_MAX_QUERY_EXECUTION_TIME}, "extra":${DB_EXTRA}, "options":${DB_OPTIONS} }'
       DB_CLIENT_PORT:
         hideIfNull: true
         value: null
@@ -412,7 +452,7 @@ database:
       DB_EXTRA:
         value: 'null'
       DB_CONFIGURATION:
-        value: '{"type":"${DB_TYPE}","host":"${DB_HOST}","port":${DB_PORT},"database":"${DB_NAME}","schema":"${DB_SCHEMA}","username":"${DB_USER}","password":"${DB_PSWD}","synchronize":${DB_SYNCHRONIZE},"maxQueryExecutionTime":${DB_MAX_QUERY_EXECUTION_TIME},"extra":${DB_EXTRA}}'
+        value: '{ "type":"${DB_TYPE}", "connectString":"${DB_HOST}:${DB_PORT}/${DB_NAME}", "schema":"${DB_SCHEMA}", "username":"${DB_USER}", "password":"${DB_PSWD}", "synchronize":${DB_SYNCHRONIZE}, "maxQueryExecutionTime":${DB_MAX_QUERY_EXECUTION_TIME}, "extra":${DB_EXTRA} }'
     src_uncomment:
       core_module:
         lines:
@@ -476,7 +516,7 @@ database:
       DB_EXTRA:
         value: 'null'
       DB_CONFIGURATION:
-        value: '{"type":"${DB_TYPE}","host":"${DB_HOST}","port":${DB_PORT},"database":"${DB_NAME}","schema":"${DB_SCHEMA}","username":"${DB_USER}","password":"${DB_PSWD}","synchronize":${DB_SYNCHRONIZE},"maxQueryExecutionTime":${DB_MAX_QUERY_EXECUTION_TIME},"extra":${DB_EXTRA}}'
+        value: '{ "type":"${DB_TYPE}", "host":"${DB_HOST}", "port":${DB_PORT}, "database":"${DB_NAME}", "schema":"${DB_SCHEMA}", "username":"${DB_USER}", "password":"${DB_PSWD}", "synchronize":${DB_SYNCHRONIZE}, "maxQueryExecutionTime":${DB_MAX_QUERY_EXECUTION_TIME}, "extra":${DB_EXTRA} }'
       DB_CLIENT_PORT:
         hideIfNull: true
         value: null

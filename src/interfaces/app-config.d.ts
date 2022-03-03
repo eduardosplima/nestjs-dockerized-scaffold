@@ -8,9 +8,9 @@ export interface AppConfig {
     docker_compose: Record<string, unknown>;
 
     npm: {
-      install: Array<string>;
-      install_dev: Array<string>;
-      uninstall: Array<string>;
+      install: string[];
+      install_dev: string[];
+      uninstall: string[];
     };
 
     env_file: {
@@ -24,8 +24,25 @@ export interface AppConfig {
 
   jwt: {
     npm: {
-      install: Array<string>;
-      install_dev: Array<string>;
+      install: string[];
+      install_dev: string[];
+    };
+
+    env_file: {
+      [K in string]: EnvConfig;
+    };
+
+    src_uncomment: {
+      [K in string]: SrcUncommentConfig;
+    };
+  };
+
+  ldap: {
+    docker_compose: Record<string, unknown>;
+
+    npm: {
+      install: string[];
+      install_dev: string[];
     };
 
     env_file: {
@@ -41,8 +58,8 @@ export interface AppConfig {
     docker_compose: Record<string, unknown>;
 
     npm: {
-      install: Array<string>;
-      install_dev: Array<string>;
+      install: string[];
+      install_dev: string[];
     };
 
     env_file: {
@@ -58,8 +75,8 @@ export interface AppConfig {
     docker_compose: Record<string, unknown>;
 
     npm: {
-      install: Array<string>;
-      install_dev: Array<string>;
+      install: string[];
+      install_dev: string[];
     };
 
     env_file: {
@@ -75,8 +92,8 @@ export interface AppConfig {
     docker_compose: Record<string, unknown>;
 
     npm: {
-      install: Array<string>;
-      install_dev: Array<string>;
+      install: string[];
+      install_dev: string[];
     };
 
     env_file: {

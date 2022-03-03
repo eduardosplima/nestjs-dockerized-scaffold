@@ -7,12 +7,12 @@ export class CpfValidatorUtil {
   }
 
   private static verifierDigit(digits: string): number {
-    const numbers: Array<number> = digits.split('').map((number) => {
+    const numbers: number[] = digits.split('').map((number) => {
       return Number.parseInt(number, 10);
     });
 
     const modulus: number = numbers.length + 1;
-    const multiplied: Array<number> = numbers.map(
+    const multiplied: number[] = numbers.map(
       (number, index) => number * (modulus - index),
     );
     const mod: number =

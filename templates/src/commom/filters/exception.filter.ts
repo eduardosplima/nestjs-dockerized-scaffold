@@ -4,6 +4,7 @@ import {
   Catch,
   HttpException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import type {
   ArgumentsHost,
@@ -11,14 +12,11 @@ import type {
 } from '@nestjs/common';
 import { HttpErrorByCode } from '@nestjs/common/utils/http-error-by-code.util';
 
-import { LoggerService } from '../../core/logger/logger.service';
 import { CustomHttpException } from '../exceptions/custom-http.exception';
 
 @Catch()
 export class ExceptionFilter implements IExceptionFilter {
-  constructor(private readonly logger: LoggerService) {
-    logger.setContext(ExceptionFilter.name);
-  }
+  private readonly logger = new Logger(ExceptionFilter.name);
 
   catch(exception: Error, host: ArgumentsHost): void {
     let statusCode: number;
@@ -33,11 +31,7 @@ export class ExceptionFilter implements IExceptionFilter {
 
       if (exception instanceof CustomHttpException) {
         const { cause } = exception;
-        if (typeof cause === 'string') {
-          dataToLog = { message: cause };
-        } else {
-          dataToLog = { message: cause.message };
-        }
+        dataToLog = { message: cause.message };
       } else {
         if (typeof dataToSend === 'string')
           dataToSend = {

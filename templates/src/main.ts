@@ -9,17 +9,14 @@ import { FastifyAdapter } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
-import { LoggerService } from './core/logger/logger.service';
+import { CoreLogger } from './core/logger/core-logger';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
-    { bufferLogs: process.env.NODE_ENV === 'development' },
+    { bufferLogs: true, logger: new CoreLogger() },
   );
-
-  const loggerService = await app.resolve(LoggerService);
-  app.useLogger(loggerService);
 
   app.enableCors();
   app.register(helmetPlugin, {
@@ -39,10 +36,13 @@ async function bootstrap() {
   app.register(multipartPlugin);
 
   if (process.env.SWAGGER_PATH) {
-    const config = new DocumentBuilder()
-      .setTitle(process.env.APP_NAME)
+    const builder = new DocumentBuilder()
       // .addBearerAuth()
-      .build();
+      .setTitle(process.env.APP_NAME);
+    if (process.env.SWAGGER_SERVER) {
+      builder.addServer(process.env.SWAGGER_SERVER);
+    }
+    const config = builder.build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup(process.env.SWAGGER_PATH, app, document);
   }

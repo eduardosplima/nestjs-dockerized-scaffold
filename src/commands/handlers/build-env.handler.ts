@@ -17,7 +17,7 @@ export class BuildEnvHandler
 
     let result: string;
     try {
-      const envLines: Array<string> = [];
+      const envLines: string[] = [];
       envConfigMap.forEach((envConfig, envName) => {
         if (envConfig.lineSeparator) {
           envLines.push('');

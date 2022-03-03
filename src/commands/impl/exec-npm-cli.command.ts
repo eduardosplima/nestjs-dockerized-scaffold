@@ -5,6 +5,6 @@ export class ExecNpmCliCommand {
     public readonly directory: string,
     public readonly cmd: NpmCliCmdEnum,
     public readonly spinText: string,
-    public readonly parameters?: Array<string>,
+    public readonly parameters?: string[],
   ) {}
 }

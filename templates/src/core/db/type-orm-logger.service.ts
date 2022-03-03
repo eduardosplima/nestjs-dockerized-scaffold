@@ -1,19 +1,21 @@
-import type { Logger as PinoLogger } from 'pino';
 import { QueryRunner } from 'typeorm';
 import type { Logger as TypeOrmLogger } from 'typeorm';
 
+import { Logger } from '@nestjs/common';
+
 export class TypeOrmLoggerService implements TypeOrmLogger {
-  constructor(private readonly logger: PinoLogger) {}
+  private readonly logger = new Logger('TypeOrm');
 
   logQuery(
     query: string,
     parameters?: unknown[],
     queryRunner?: QueryRunner,
   ): void {
-    this.logger.debug(
-      { connection: queryRunner?.connection?.name, parameters, query },
-      'query',
-    );
+    this.logger.debug({
+      connection: queryRunner?.connection?.name,
+      parameters,
+      query,
+    });
   }
 
   logQueryError(
@@ -22,15 +24,12 @@ export class TypeOrmLoggerService implements TypeOrmLogger {
     parameters?: unknown[],
     queryRunner?: QueryRunner,
   ): void {
-    this.logger.error(
-      {
-        connection: queryRunner?.connection?.name,
-        parameters,
-        query,
-        error: (error as Error)?.message || error,
-      },
-      'queryError',
-    );
+    this.logger.error({
+      connection: queryRunner?.connection?.name,
+      parameters,
+      query,
+      error: (error as Error)?.message || error,
+    });
   }
 
   logQuerySlow(
@@ -39,24 +38,20 @@ export class TypeOrmLoggerService implements TypeOrmLogger {
     parameters?: unknown[],
     queryRunner?: QueryRunner,
   ): void {
-    this.logger.warn(
-      { connection: queryRunner?.connection?.name, parameters, query, time },
-      'querySlow',
-    );
+    this.logger.warn({
+      connection: queryRunner?.connection?.name,
+      parameters,
+      query,
+      time,
+    });
   }
 
   logSchemaBuild(message: string, queryRunner?: QueryRunner): void {
-    this.logger.info(
-      { connection: queryRunner?.connection?.name, message },
-      'schemaBuild',
-    );
+    this.logger.log({ connection: queryRunner?.connection?.name, message });
   }
 
   logMigration(message: string, queryRunner?: QueryRunner): void {
-    this.logger.info(
-      { connection: queryRunner?.connection?.name, message },
-      'migration',
-    );
+    this.logger.log({ connection: queryRunner?.connection?.name, message });
   }
 
   log(
@@ -64,9 +59,10 @@ export class TypeOrmLoggerService implements TypeOrmLogger {
     message: unknown,
     queryRunner?: QueryRunner,
   ): void {
-    this.logger[level](
-      { connection: queryRunner?.connection?.name, message },
-      'log',
-    );
+    this.logger.log({
+      level,
+      connection: queryRunner?.connection?.name,
+      message,
+    });
   }
 }

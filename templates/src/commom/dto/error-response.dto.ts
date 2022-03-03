@@ -6,7 +6,7 @@ export class ErrorResponseDto {
   @ApiProperty({
     oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
-  message?: string | Array<string>;
+  message?: string | string[];
 
   error?: string;
 }

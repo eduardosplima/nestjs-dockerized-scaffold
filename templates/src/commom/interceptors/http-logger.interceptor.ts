@@ -3,7 +3,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type {
   CallHandler,
   ExecutionContext,
@@ -11,16 +11,14 @@ import type {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import { LoggerService } from '../../core/logger/logger.service';
 import { MetadataEnum } from '../enums/metadata.enum';
 import type { HttpLoggerOptions } from '../interfaces/http-logger-options.interface';
 
 @Injectable()
 export class HttpLoggerInterceptor implements NestInterceptor {
-  constructor(
-    private readonly logger: LoggerService,
-    private readonly reflector: Reflector,
-  ) {}
+  private readonly logger = new Logger();
+
+  constructor(private readonly reflector: Reflector) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const httpLoggerOptions = this.reflector.get<HttpLoggerOptions>(
@@ -30,16 +28,10 @@ export class HttpLoggerInterceptor implements NestInterceptor {
 
     const httpContext = context.switchToHttp();
 
-    const request = httpContext.getRequest<FastifyRequest>();
-    const {
-      ip,
-      url,
-      method,
-      params,
-      query,
-      // @ts-expect-error 'O lint não reconhece o "req.user"'
-      user,
-    } = request;
+    const request = httpContext.getRequest<
+      FastifyRequest & { user: unknown }
+    >();
+    const { ip, url, method, params, query, user } = request;
     const body =
       httpLoggerOptions.redact?.body &&
       request.body &&

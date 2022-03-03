@@ -5,24 +5,37 @@
       "type": "node",
       "request": "attach",
       "name": "Debug (docker)",
-
       "address": "0.0.0.0",
       "localRoot": "${workspaceFolder}",
-      "port": 9229,
+      "port": "${input:envAPP_PORT_DEBUG}",
       "protocol": "inspector",
       "remoteRoot": "/usr/src/app",
       "restart": true,
-      "skipFiles": ["<node_internals>/**"]
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
     },
     {
       "type": "node",
       "request": "attach",
       "name": "Debug (jest)",
-
       "localRoot": "${workspaceFolder}",
-      "port": 9229,
+      "port": "${input:envAPP_PORT_DEBUG}",
       "protocol": "inspector",
-      "skipFiles": ["<node_internals>/**"]
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "envAPP_PORT_DEBUG",
+      "type": "command",
+      "command": "extension.commandvariable.file.content",
+      "args": {
+        "fileName": "${workspaceFolder}/.env",
+        "key": "APP_PORT_DEBUG"
+      }
     }
   ]
 }

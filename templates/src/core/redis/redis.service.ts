@@ -1,32 +1,31 @@
-import IORedis from 'ioredis';
 import type { Redis } from 'ioredis';
+import IORedis from 'ioredis';
 
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 
-import { LoggerService } from '../logger/logger.service';
 import redisConfig from './config/redis.config';
 
 @Injectable()
 export class RedisService {
+  private readonly logger = new Logger(RedisService.name);
+
   readonly client: Redis;
 
   constructor(
     @Inject(redisConfig.KEY)
     config: ConfigType<typeof redisConfig>,
-    logger: LoggerService,
   ) {
-    logger.setContext(RedisService.name);
     const redis = new IORedis(config.options);
 
-    this.client = logger.isLevelEnabled('debug')
+    this.client = Logger.isLevelEnabled('debug')
       ? new Proxy(redis, {
           get: (target, property) => {
             if (Object.prototype.hasOwnProperty.call(target, property))
               return target[property];
 
             return (...args: any[]): unknown => {
-              logger.debug({
+              this.logger.debug({
                 command: property,
                 args,
               });

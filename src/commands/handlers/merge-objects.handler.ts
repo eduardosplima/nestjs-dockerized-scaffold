@@ -1,5 +1,5 @@
 import { readFile, readJson } from 'fs-extra';
-import { load as yamlLoad } from 'js-yaml';
+import { load as loadYaml } from 'js-yaml';
 import { isArray, merge, mergeWith, union } from 'lodash';
 import { createSpinner } from 'nestjs-console';
 import { basename, extname } from 'path';
@@ -22,7 +22,7 @@ export class MergeObjectsHandler
     spin.start(spinText);
 
     let jsonResult: Record<string, unknown>;
-    const jsons: Array<Record<string, unknown>> = [];
+    const jsons: Record<string, unknown>[] = [];
     try {
       if (typeof dst === 'string') {
         const filename = basename(dst);
@@ -30,7 +30,7 @@ export class MergeObjectsHandler
 
         if (fileext === '.yml' || fileext === '.yaml') {
           jsons.push(
-            yamlLoad(await readFile(dst, 'utf8')) as Record<string, unknown>,
+            loadYaml(await readFile(dst, 'utf8')) as Record<string, unknown>,
           );
         } else if (fileext === '.json') {
           jsons.push(await readJson(dst));
@@ -51,7 +51,7 @@ export class MergeObjectsHandler
 
           if (fileext === '.yml' || fileext === '.yaml') {
             jsons.push(
-              yamlLoad(await readFile(src, 'utf8')) as Record<string, unknown>,
+              loadYaml(await readFile(src, 'utf8')) as Record<string, unknown>,
             );
           } else if (fileext === '.json') {
             jsons.push(await readJson(src));
@@ -69,10 +69,7 @@ export class MergeObjectsHandler
         ? mergeWith(
             {},
             ...jsons,
-            (
-              objValue: unknown,
-              srcValue: Array<unknown>,
-            ): Array<unknown> | undefined => {
+            (objValue: unknown, srcValue: unknown[]): unknown[] | undefined => {
               if (isArray(objValue)) {
                 return union(objValue, srcValue);
               }

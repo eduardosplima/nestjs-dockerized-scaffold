@@ -38,7 +38,7 @@ export class MetricsService {
 
   collectHttpMetrics(
     adapterHost: HttpAdapterHost,
-    ignorePaths: Array<string>,
+    ignorePaths: string[],
   ): void {
     const fastify = adapterHost.httpAdapter.getInstance<FastifyInstance>();
     fastify.addHook('onResponse', (request, reply, done) => {

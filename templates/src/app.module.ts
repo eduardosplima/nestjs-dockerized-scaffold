@@ -12,6 +12,7 @@ import { CoreModule } from './core/core.module';
       expandVariables: true,
     }),
     CoreModule.forRoot(),
+
     // AuthModule,
   ],
 })

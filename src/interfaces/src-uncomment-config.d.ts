@@ -1,5 +1,5 @@
 export interface SrcUncommentConfig {
-  lines: Array<string>;
+  lines: string[];
 
-  path: Array<string>;
+  path: string[];
 }

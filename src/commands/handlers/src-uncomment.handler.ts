@@ -24,7 +24,7 @@ export class SrcUncommentHandler
       await Promise.all(
         Object.values(srcUncommentConfigList).map((srcUncommentConfig) => {
           return (async () => {
-            const lines: Array<string> = [];
+            const lines: string[] = [];
             const file = join(srcDirectory, ...srcUncommentConfig.path);
 
             const reader = createInterface({

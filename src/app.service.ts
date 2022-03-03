@@ -11,6 +11,7 @@ import { CreateNestAppCommand } from './commands/impl/create-nest-app.command';
 import { CreateTmpDirCommand } from './commands/impl/create-tmp-dir.command';
 import { ExecNpmCliCommand } from './commands/impl/exec-npm-cli.command';
 import { MergeObjectsCommand } from './commands/impl/merge-objects.command';
+import { ReadCommand } from './commands/impl/read.command';
 import { RemoveCommand } from './commands/impl/remove.command';
 import { SrcUncommentCommand } from './commands/impl/src-uncomment.command';
 import { WriteCommand } from './commands/impl/write.command';
@@ -91,6 +92,12 @@ export class AppService {
         },
       },
       {
+        flags: '--setup-ldap',
+        description:
+          'Indicative to use core module template to connect in some ldap',
+        required: false,
+      },
+      {
         flags: '--setup-redis',
         description:
           'Indicative to use core module template to connect in redis',
@@ -110,6 +117,11 @@ export class AppService {
       {
         flags: '--skip-database-container',
         description: 'Indicative to skip database container setup',
+        required: false,
+      },
+      {
+        flags: '--skip-ldap-container',
+        description: 'Indicative to skip ldap container setup',
         required: false,
       },
       {
@@ -150,6 +162,7 @@ export class AppService {
       projectDir,
       options.setupJwt,
       options.setupDatabase,
+      options.setupLdap,
       options.setupRedis,
       options.setupEmail,
       options.setupPrometheus,
@@ -169,16 +182,17 @@ export class AppService {
 
     await this.customizeTsConfig(projectDir, templatesDir);
 
-    await this.createVscodeWorkspace(
-      projectDir,
-      templatesDir,
-      options.debugPort,
-    );
+    await this.customizeREADME(projectDir, templatesDir, appName);
+
+    await this.createGitIgnore(projectDir, templatesDir);
+
+    await this.createVscodeWorkspace(projectDir, templatesDir);
 
     await this.createDockerEnvironment(
       projectDir,
       templatesDir,
       options.skipDatabaseContainer ? null : options.setupDatabase,
+      options.setupLdap && !options.skipLdapContainer,
       options.setupRedis && !options.skipRedisContainer,
       options.setupEmail && !options.skipEmailContainer,
       options.setupPrometheus && !options.skipPrometheusContainer,
@@ -192,6 +206,8 @@ export class AppService {
       options.setupJwt,
       options.setupDatabase,
       options.skipDatabaseContainer,
+      options.setupLdap,
+      options.skipLdapContainer,
       options.setupRedis,
       options.skipRedisContainer,
       options.setupEmail,
@@ -205,6 +221,7 @@ export class AppService {
       templatesDir,
       options.setupJwt,
       options.setupDatabase,
+      options.setupLdap,
       options.setupRedis,
       options.setupEmail,
       options.setupPrometheus,
@@ -224,6 +241,7 @@ export class AppService {
     projectDir: string,
     setupJwt: boolean,
     setupDatabase: DatabaseTypeEnum,
+    setupLdap: boolean,
     setupRedis: boolean,
     setupEmail: boolean,
     setupPrometheus: boolean,
@@ -247,6 +265,14 @@ export class AppService {
       }
       if (dbConfig.npm.install_dev) {
         installDevPackages.push(...dbConfig.npm.install_dev);
+      }
+    }
+    if (setupLdap) {
+      if (this.config.ldap.npm.install) {
+        installPackages.push(...this.config.ldap.npm.install);
+      }
+      if (this.config.ldap.npm.install_dev) {
+        installDevPackages.push(...this.config.ldap.npm.install_dev);
       }
     }
     if (setupRedis) {
@@ -385,36 +411,45 @@ export class AppService {
     await this.commandBus.execute(new CopyCommand(src, dst));
   }
 
+  private async customizeREADME(
+    projectDir: string,
+    templatesDir: string,
+    appName: string,
+  ): Promise<void> {
+    const src = join(templatesDir, 'README.md');
+    const dst = join(projectDir, 'README.md');
+
+    const data: string = await this.commandBus.execute(new ReadCommand(src));
+    return this.commandBus.execute(
+      new WriteCommand(data.replaceAll('$APP_NAME', appName), dst),
+    );
+  }
+
+  private async createGitIgnore(
+    projectDir: string,
+    templatesDir: string,
+  ): Promise<void> {
+    const src = join(templatesDir, '.gitignore');
+    const dst = join(projectDir, '.gitignore');
+
+    return this.commandBus.execute(new CopyCommand(src, dst));
+  }
+
   private async createVscodeWorkspace(
     projectDir: string,
     templatesDir: string,
-    debugPort: number,
   ): Promise<void> {
     const src = join(templatesDir, '.vscode');
     const dst = join(projectDir, '.vscode');
 
-    await this.commandBus.execute(new CopyCommand(src, dst));
-
-    const file = join(dst, 'launch.json');
-    const data: Record<string, unknown> = await this.commandBus.execute(
-      new MergeObjectsCommand(
-        [
-          {
-            configurations: [{ port: debugPort }],
-          },
-        ],
-        file,
-        'Adjusting debug port in launch.json',
-      ),
-    );
-
-    return this.commandBus.execute(new WriteCommand(data, file));
+    return this.commandBus.execute(new CopyCommand(src, dst));
   }
 
   private async createDockerEnvironment(
     projectDir: string,
     templatesDir: string,
     setupDatabase: DatabaseTypeEnum,
+    setupLdap: boolean,
     setupRedis: boolean,
     setupEmail: boolean,
     setupPrometheus: boolean,
@@ -426,12 +461,16 @@ export class AppService {
     await this.commandBus.execute(new CopyCommand(src, dst));
 
     // docker-compose.yml
-    const composeFragments: Array<Record<string, unknown>> = [];
-    const dependsOn: Array<string> = [];
+    const composeFragments: Record<string, unknown>[] = [];
+    const dependsOn: string[] = [];
 
     if (dbConfig?.docker.compose) {
       composeFragments.push(dbConfig.docker.compose);
       dependsOn.push(...Object.keys(dbConfig.docker.compose.services));
+    }
+    if (setupLdap && this.config.ldap.docker_compose) {
+      composeFragments.push(this.config.ldap.docker_compose);
+      dependsOn.push(...Object.keys(this.config.ldap.docker_compose.services));
     }
     if (setupRedis && this.config.redis.docker_compose) {
       composeFragments.push(this.config.redis.docker_compose);
@@ -481,6 +520,8 @@ export class AppService {
     setupJwt: boolean,
     setupDatabase: DatabaseTypeEnum,
     skipDatabaseContainer: boolean,
+    setupLdap: boolean,
+    skipLdapContainer: boolean,
     setupRedis: boolean,
     skipRedisContainer: boolean,
     setupEmail: boolean,
@@ -511,6 +552,9 @@ export class AppService {
     }
     if (dbConfig) {
       populateEnvFragments(dbConfig.env_file, !skipDatabaseContainer);
+    }
+    if (setupLdap) {
+      populateEnvFragments(this.config.ldap.env_file, !skipLdapContainer);
     }
     if (setupRedis) {
       populateEnvFragments(this.config.redis.env_file, !skipRedisContainer);
@@ -544,6 +588,7 @@ export class AppService {
     templatesDir: string,
     setupJwt: boolean,
     setupDatabase: DatabaseTypeEnum,
+    setupLdap: boolean,
     setupRedis: boolean,
     setupEmail: boolean,
     setupPrometheus: boolean,
@@ -567,6 +612,7 @@ export class AppService {
       if (!setupJwt && basename(dest) === 'auth') return false;
       if (!setupTypeOrm && basename(dest) === 'db') return false;
       if (!setupMongoose && basename(dest) === 'mongodb') return false;
+      if (!setupLdap && basename(dest) === 'ldap') return false;
       if (!setupRedis && basename(dest) === 'redis') return false;
       if (!setupEmail && basename(dest) === 'email') return false;
       if (!setupPrometheus && basename(dest) === 'metrics') return false;
@@ -578,12 +624,15 @@ export class AppService {
     );
 
     const dbConfig = this.config.database[setupDatabase];
-    const srcUncommentConfigList: Array<Record<string, unknown>> = [];
+    const srcUncommentConfigList: Record<string, unknown>[] = [];
     if (setupJwt) {
       srcUncommentConfigList.push(this.config.jwt.src_uncomment);
     }
     if (dbConfig) {
       srcUncommentConfigList.push(dbConfig.src_uncomment);
+    }
+    if (setupLdap) {
+      srcUncommentConfigList.push(this.config.ldap.src_uncomment);
     }
     if (setupRedis) {
       srcUncommentConfigList.push(this.config.redis.src_uncomment);

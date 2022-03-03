@@ -12,7 +12,7 @@ import type { JwtPayload } from '../interfaces/jwt-payload.interface';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     @Inject(authConfig.KEY)
-    config: ConfigType<typeof authConfig>,
+    private readonly config: ConfigType<typeof authConfig>,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -22,9 +22,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(request: FastifyRequest, payload: JwtPayload): Promise<unknown> {
+  async validate(
+    request: FastifyRequest,
+    payload: JwtPayload,
+  ): Promise<unknown> {
     // TODO: Implementar lógica de validação (caso exista)
     // TODO: Retornar os dados de usuário que serão adicionados ao request (req.user)
-    return { id: payload.sub };
+    return { id: payload.sub, secret: this.config.secret };
   }
 }
