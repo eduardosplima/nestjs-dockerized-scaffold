@@ -2,8 +2,6 @@ FROM node:16-slim AS node-oracle
 
 ARG ORACLE_INSTALL=/opt/oracle
 
-ENV GIT_SSL_NO_VERIFY=true
-
 WORKDIR ${ORACLE_INSTALL}
 RUN apt-get update
 RUN apt-get install -y git libaio1 procps unzip wget

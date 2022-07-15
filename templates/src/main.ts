@@ -1,6 +1,6 @@
+import helmetPlugin from '@fastify/helmet';
+import multipartPlugin from '@fastify/multipart';
 import { fastifyPlugin as rTracerPlugin } from 'cls-rtracer';
-import { fastifyHelmet as helmetPlugin } from 'fastify-helmet';
-import multipartPlugin from 'fastify-multipart';
 import hexoid from 'hexoid';
 
 import { NestFactory } from '@nestjs/core';

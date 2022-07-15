@@ -26,6 +26,9 @@ export class HttpLoggerInterceptor implements NestInterceptor {
       context.getHandler(),
     ) || { level: 'debug' };
 
+    // Performance improvement
+    if (!Logger.isLevelEnabled(httpLoggerOptions.level)) return next.handle();
+
     const httpContext = context.switchToHttp();
 
     const request = httpContext.getRequest<

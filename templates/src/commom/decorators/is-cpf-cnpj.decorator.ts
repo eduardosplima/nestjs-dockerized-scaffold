@@ -8,7 +8,7 @@ export function IsCpfCnpj({
   onlyNumbers,
   validationOptions,
 }: {
-  type: 'cpf' | 'cnpj' | 'cpf&cnpj';
+  type: 'cpf' | 'cnpj' | 'cpf/cnpj';
   onlyNumbers?: boolean;
   validationOptions?: ValidationOptions;
 }) {
@@ -16,12 +16,20 @@ export function IsCpfCnpj({
     object: InstanceType<typeof Object>,
     propertyName: string,
   ): void {
+    let options: ValidationOptions = {
+      message: `$property must be ${type}`,
+    };
+
+    if (!validationOptions) {
+      options = { ...options, ...validationOptions };
+    }
+
     registerDecorator({
       name: 'isCpfCnpj',
       target: object.constructor,
       propertyName,
       constraints: [],
-      options: validationOptions,
+      options,
       validator: {
         validate(value: unknown): boolean {
           const cpfCnpj = `${value}`;

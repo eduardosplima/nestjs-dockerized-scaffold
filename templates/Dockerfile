@@ -1,9 +1,5 @@
-FROM node:16-alpine AS node-custom
-
-ENV GIT_SSL_NO_VERIFY=true
-RUN apk add --no-cache git
 ##################################################
-FROM node-custom AS build
+FROM node:16-alpine AS build
 
 ARG buildcmd="npm run build:prod"
 
@@ -13,7 +9,7 @@ RUN npm install
 COPY . .
 RUN ${buildcmd}
 ##################################################
-FROM node-custom AS package
+FROM node:16-alpine AS package
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
@@ -28,8 +24,6 @@ RUN npm cache clean --force
 COPY --from=build /usr/src/app/dist ./dist
 
 EXPOSE 3000
-
-RUN apk del git
 
 USER node
 CMD node --max-old-space-size=${HEAP_SIZE} dist/main
