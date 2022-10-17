@@ -456,9 +456,21 @@ export class AppService {
   ): Promise<void> {
     // Dockerfile
     const dbConfig = this.config.database[setupDatabase];
-    const src = join(templatesDir, dbConfig?.docker.dockerfile || 'Dockerfile');
-    const dst = join(projectDir, 'Dockerfile');
-    await this.commandBus.execute(new CopyCommand(src, dst));
+    const dockerfileSrc = join(
+      templatesDir,
+      dbConfig?.docker.dockerfile || 'Dockerfile',
+    );
+    const dockerfileDst = join(projectDir, 'Dockerfile');
+    await this.commandBus.execute(
+      new CopyCommand(dockerfileSrc, dockerfileDst),
+    );
+
+    // .dockerignore
+    const dockerignoreSrc = join(templatesDir, '.dockerignore');
+    const dockerignoreDst = join(projectDir, '.dockerignore');
+    await this.commandBus.execute(
+      new CopyCommand(dockerignoreSrc, dockerignoreDst),
+    );
 
     // docker-compose.yml
     const composeFragments: Record<string, unknown>[] = [];

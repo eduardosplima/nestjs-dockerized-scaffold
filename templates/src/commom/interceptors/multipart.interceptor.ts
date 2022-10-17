@@ -1,3 +1,4 @@
+import type { MultipartFile } from '@fastify/multipart';
 import type { FastifyRequest } from 'fastify';
 import { createWriteStream } from 'fs';
 import hexoid from 'hexoid';
@@ -45,7 +46,7 @@ export class MultipartInterceptor implements NestInterceptor {
       }
 
       // eslint-disable-next-line no-restricted-syntax
-      for await (const part of request.parts()) {
+      for await (const part of request.parts() as AsyncIterableIterator<MultipartFile>) {
         if (part.file) {
           const filenameServer = this.randomId() + extname(part.filename);
           const filepath = join(tmpdir(), filenameServer);
