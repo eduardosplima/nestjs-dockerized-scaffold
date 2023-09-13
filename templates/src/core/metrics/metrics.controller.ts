@@ -8,7 +8,7 @@ import { ApiExcludeEndpoint } from '@nestjs/swagger';
 export class MetricsController extends PrometheusController {
   @ApiExcludeEndpoint(true)
   @Get()
-  async index(@Res() reply: FastifyReply): Promise<void> {
-    await super.index(reply);
+  async index(@Res() reply: FastifyReply): Promise<string> {
+    return super.index(reply);
   }
 }

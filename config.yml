@@ -62,6 +62,7 @@ commom:
       - '@nestjs/config'
       - '@nestjs/mapped-types'
       - '@nestjs/platform-fastify'
+      - '@fastify/static'
       - '@nestjs/swagger'
       - 'class-transformer'
       - 'class-validator'
@@ -74,7 +75,7 @@ commom:
       - 'pino'
       - 'request-ip'
     install_dev:
-      - '@trivago/prettier-plugin-sort-imports@^2.0.0'
+      - '@trivago/prettier-plugin-sort-imports'
       - '@types/fast-redact'
       - '@types/validator'
       - 'eslint-config-airbnb-base'
@@ -427,7 +428,7 @@ database:
     npm:
       install:
         - '@nestjs/typeorm'
-        - 'oracledb'
+        - 'https://github.com/oracle/node-oracledb/releases/download/v5.5.0/oracledb-src-5.5.0.tgz'
         - 'typeorm'
     env_file:
       DB_TYPE:

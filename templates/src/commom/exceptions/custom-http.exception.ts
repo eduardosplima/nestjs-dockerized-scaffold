@@ -7,6 +7,6 @@ export class CustomHttpException extends HttpException {
     status: HttpStatus,
     public readonly cause: Error,
   ) {
-    super(HttpException.createBody(response, undefined, status), status);
+    super(response, status, { cause });
   }
 }
