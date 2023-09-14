@@ -5,6 +5,7 @@ ARG ORACLE_INSTALL=/opt/oracle
 WORKDIR ${ORACLE_INSTALL}
 RUN apt-get update
 RUN apt-get install -y git libaio1 procps unzip wget
+RUN apt-get install -y build-essential git libaio1 procps python3 unzip wget
 RUN wget -q https://download.oracle.com/otn_software/linux/instantclient/instantclient-basic-linuxx64.zip
 RUN unzip -q instantclient-basic-linuxx64.zip
 RUN rm -rf instantclient-basic-linuxx64.zip
@@ -37,7 +38,7 @@ COPY --from=build /usr/src/app/dist ./dist
 
 EXPOSE 3000
 
-RUN apt-get remove -y git unzip wget
+RUN apt-get remove -y build-essential python3 git unzip wget
 RUN apt-get autoremove -y --purge
 RUN apt-get autoclean
 
